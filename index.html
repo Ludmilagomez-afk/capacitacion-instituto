@@ -1,6 +1,93 @@
-<link rel="manifest" href="manifest.json">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Institucional - CSIRT</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .modal { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; text-align: center; }
+        .legal-box { height: 100px; overflow-y: scroll; border: 1px solid #ddd; font-size: 11px; text-align: left; padding: 10px; margin: 15px 0; background: #fafafa; }
+        .btn-main { background: #007bff; color: white; border: none; padding: 15px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        #status { display: none; margin-top: 20px; color: #28a745; font-weight: bold; }
+        video, canvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="modal">
+    <h2>Asistencia Digital v2.0</h2>
+    <p>Para continuar, debe aceptar los términos de uso de la plataforma institucional.</p>
+    
+    <div class="legal-box">
+        <b>TÉRMINOS Y CONDICIONES DE USO:</b><br>
+        Al utilizar esta aplicación, el usuario otorga permiso explícito para:
+        1. Acceso a la cámara frontal para validación biométrica facial.<br>
+        2. Recolección de coordenadas GPS para verificar presencia en el auditorio.<br>
+        3. Almacenamiento de datos de sesión en el dispositivo local.<br>
+        El CSIRT no se responsabiliza por el uso indebido de los permisos otorgados voluntariamente...
+    </div>
+
+    <label style="font-size: 12px;">
+        <input type="checkbox" id="checkTerms"> He leído y acepto los términos de hardware.
+    </label>
+    
+    <button class="btn-main" style="margin-top:20px;" id="startBtn">CONFIGURAR Y REGISTRAR</button>
+    <div id="status">✅ Registro Completo. <br>Archivo de credencial descargado.</div>
+</div>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
+    const startBtn = document.getElementById('startBtn');
+    const checkTerms = document.getElementById('checkTerms');
+    const status = document.getElementById('status');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+
+    startBtn.addEventListener('click', async () => {
+        if (!checkTerms.checked) {
+            alert("Debe aceptar los términos para continuar.");
+            return;
+        }
+
+        try {
+            // Pedir GPS y Cámara al mismo tiempo
+            navigator.geolocation.getCurrentPosition(() => {});
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            video.srcObject = stream;
+
+            video.onloadedmetadata = () => {
+                setTimeout(() => {
+                    const context = canvas.getContext('2d');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    stream.getTracks().forEach(track => track.stop());
+
+                    const dataURL = canvas.toDataURL('image/jpeg');
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = 'CRED_ASISTENCIA_INSTITUTO.jpg';
+                    link.click();
+
+                    startBtn.style.display = "none";
+                    status.style.display = "block";
+                }, 400);
+            };
+        } catch (err) {
+            alert("Error de sistema: Se requiere habilitar permisos para registrar la asistencia.");
+        }
+    });
 </script>
+
+</body>
+</html>

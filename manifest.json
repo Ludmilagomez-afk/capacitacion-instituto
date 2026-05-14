@@ -1,0 +1,15 @@
+{
+  "name": "Asistencia Digital v2.0",
+  "short_name": "Asistencia",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/684/684831.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

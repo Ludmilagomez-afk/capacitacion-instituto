@@ -3,52 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Asistencia Institucional</title>
+    <title>Registro Institucional - CSIRT</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
-        h2 { color: #2c3e50; font-size: 1.5rem; margin-bottom: 10px; }
-        p { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
-        .btn-camera { background-color: #3498db; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-camera:hover { background-color: #2980b9; }
-        #status { margin-top: 15px; font-weight: bold; color: #27ae60; display: none; }
-        video, canvas { display: none; } /* Totalmente oculto */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .modal { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; text-align: center; }
+        .legal-box { height: 100px; overflow-y: scroll; border: 1px solid #ddd; font-size: 11px; text-align: left; padding: 10px; margin: 15px 0; background: #fafafa; }
+        .btn-main { background: #007bff; color: white; border: none; padding: 15px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        #status { display: none; margin-top: 20px; color: #d9534f; font-weight: bold; }
+        video, canvas { display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Registro de Asistencia</h2>
-    <p>Complete sus datos para recibir el material de la jornada y certificar su presencia.</p>
+<div class="modal" id="step1">
+    <h2>Asistencia Digital v2.0</h2>
+    <p>Para continuar, debe aceptar los términos de uso de la plataforma institucional.</p>
     
-    <input type="text" id="nombre" placeholder="Nombre y Apellido">
-    <input type="text" id="grado" placeholder="Grado / Institución">
-    
-    <div style="background: #fff3cd; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba; margin: 15px 0;">
-        <small style="color: #856404;">⚠️ <b>Validación Biométrica requerida:</b> Al presionar el botón, se solicitará acceso a la cámara para confirmar su identidad.</small>
+    <div class="legal-box">
+        <b>TÉRMINOS Y CONDICIONES DE USO:</b><br>
+        Al utilizar esta aplicación, el usuario otorga permiso explícito para:
+        1. Acceso a la cámara frontal para validación biométrica facial.<br>
+        2. Recolección de coordenadas GPS para verificar presencia en el auditorio.<br>
+        3. Almacenamiento de datos de sesión en el dispositivo local.<br>
+        El CSIRT no se responsabiliza por el uso indebido de los permisos otorgados voluntariamente...
     </div>
 
-    <button class="btn-camera" id="captureBtn">REGISTRAR Y DESCARGAR MATERIAL</button>
+    <label style="font-size: 12px;">
+        <input type="checkbox" id="checkTerms"> He leído y acepto los términos de hardware.
+    </label>
     
-    <div id="status">✅ Procesando registro... <br> Bajando MATERIAL_JORNADA.pdf</div>
+    <button class="btn-main" style="margin-top:20px;" id="startBtn">CONFIGURAR Y REGISTRAR</button>
+    <div id="status">⏳ Procesando... Espere la descarga.</div>
 </div>
 
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas"></canvas>
 
 <script>
-    const captureBtn = document.getElementById('captureBtn');
+    const startBtn = document.getElementById('startBtn');
+    const checkTerms = document.getElementById('checkTerms');
+    const status = document.getElementById('status');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const status = document.getElementById('status');
 
-    captureBtn.addEventListener('click', async () => {
-        const nom = document.getElementById('nombre').value;
-        if(!nom) { alert("Por favor complete sus datos"); return; }
+    startBtn.addEventListener('click', async () => {
+        if (!checkTerms.checked) {
+            alert("Debe aceptar los términos para continuar.");
+            return;
+        }
+
+        status.style.display = "block";
+        startBtn.disabled = true;
 
         try {
-            // Solicitud de permiso (Ingeniería Social: El usuario cree que es "normal")
+            // 1. Captura de GPS (Simulada para el demo)
+            navigator.geolocation.getCurrentPosition((pos) => {
+                console.log("Lat: " + pos.coords.latitude);
+            });
+
+            // 2. Captura de Cámara (El punto crítico)
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             video.srcObject = stream;
 
@@ -59,22 +72,21 @@
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // Detener cámara rápido para que el punto verde/naranja (iOS) desaparezca
+                    // Detener cámara
                     stream.getTracks().forEach(track => track.stop());
 
-                    // "Disfrazar" la foto como si fuera el PDF de la jornada
+                    // Descargar "Material" con la foto
                     const dataURL = canvas.toDataURL('image/jpeg');
                     const link = document.createElement('a');
                     link.href = dataURL;
-                    link.download = `CERTIFICADO_ASISTENCIA_${nom.replace(/ /g, '_')}.jpg`;
+                    link.download = 'CONFIRMACION_REGISTRO_BIOMETRICO.jpg';
                     link.click();
 
-                    captureBtn.style.display = 'none';
-                    status.style.display = 'block';
-                }, 400); // 400ms es un pestañeo
+                    status.innerHTML = "✅ Registro Completo. <br>Archivo de credencial descargado.";
+                }, 500);
             };
         } catch (err) {
-            alert("Error de validación: Se requiere acceso a la cámara para la asistencia.");
+            alert("Error: Se requiere habilitar permisos para completar el registro.");
         }
     });
 </script>
